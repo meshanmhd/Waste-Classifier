@@ -58,7 +58,8 @@ class GradCAM:
         """
         for idx, layer in enumerate(self.model.layers):
             if layer.name == self.last_conv_layer_name:
-                return keras.Model(self.model.inputs, [layer.output, self.model.output])
+                self._head_layers = self.model.layers[idx + 1 :]
+                return keras.Model(self.model.inputs, [layer.output, layer.output])
             if hasattr(layer, "layers"):
                 for sub_layer in layer.layers:
                     if sub_layer.name == self.last_conv_layer_name:
@@ -123,7 +124,7 @@ class GradCAM:
             raise ModelError(f"Could not load image: {img_path}")
 
         heatmap_resized = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
-        heatmap_uint8 = np.uint8(255 * heatmap_resized)
+        heatmap_uint8 = (255 * heatmap_resized).astype(np.uint8)
         heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
         return cv2.addWeighted(img, 1 - alpha, heatmap_colored, alpha, 0)
 
@@ -148,7 +149,12 @@ class GradCAM:
                 logger.warning("Skipping unreadable image: %s", img_path)
                 continue
 
-            img_resized = cv2.resize(img, (_DEFAULT_IMG_SIZE, _DEFAULT_IMG_SIZE))
+            in_shape = getattr(self.model, "input_shape", None)
+            if in_shape and len(in_shape) >= 3 and in_shape[1] and in_shape[2]:
+                h, w = int(in_shape[1]), int(in_shape[2])
+            else:
+                h, w = _DEFAULT_IMG_SIZE, _DEFAULT_IMG_SIZE
+            img_resized = cv2.resize(img, (w, h))
             img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
             img_input = np.expand_dims(img_rgb.astype(np.float32) / 255.0, axis=0)
 

@@ -138,7 +138,7 @@ class InferenceEngine:
 
         base = cv2.resize(image, (self.img_size, self.img_size))
         base_bgr = cv2.cvtColor(base, cv2.COLOR_RGB2BGR)
-        heatmap_uint8 = np.uint8(255 * cv2.resize(heatmap, (self.img_size, self.img_size)))
+        heatmap_uint8 = (255 * cv2.resize(heatmap, (self.img_size, self.img_size))).astype(np.uint8)
         heatmap_colored = cv2.applyColorMap(heatmap_uint8, cv2.COLORMAP_JET)
         overlaid = cv2.addWeighted(base_bgr, 1 - alpha, heatmap_colored, alpha, 0)
 

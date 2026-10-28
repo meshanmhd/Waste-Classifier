@@ -67,10 +67,13 @@ class DataLoader:
             raise DataError(f"Expected classes {self.EXPECTED_CLASSES}, found {actual_classes}")
 
         for cls in actual_classes:
-            count = len([
-    p for p in (self.dataset_path / cls).iterdir()
-    if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}
-])
+            count = len(
+                [
+                    p
+                    for p in (self.dataset_path / cls).iterdir()
+                    if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}
+                ]
+            )
             if count < self.MIN_IMAGES_PER_CLASS:
                 logger.error("Class '%s' has only %d images", cls, count)
                 raise DataError(
@@ -153,10 +156,13 @@ class DataLoader:
             A mapping of class name to image count.
         """
         return {
-            cls.name: len([
-    p for p in cls.iterdir()
-    if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}
-])
+            cls.name: len(
+                [
+                    p
+                    for p in cls.iterdir()
+                    if p.is_file() and p.suffix.lower() in {".jpg", ".jpeg", ".png"}
+                ]
+            )
             for cls in sorted(self.dataset_path.iterdir())
             if cls.is_dir()
         }
