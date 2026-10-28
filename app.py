@@ -274,6 +274,7 @@ CUSTOM_CSS = """
     }
 
     .image-preview-frame {
+        position: relative;
         flex: 1;
         min-height: 0;
         height: calc(100vh - 130px);
@@ -518,6 +519,125 @@ CUSTOM_CSS = """
         background-color: #f3f4f6 !important;
         border-color: #9ca3af !important;
     }
+
+    @keyframes laserSweep {
+        0% { top: 0%; opacity: 0; }
+        15% { opacity: 1; }
+        85% { opacity: 1; }
+        100% { top: 98%; opacity: 0; }
+    }
+
+    .scanner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 10;
+    }
+
+    .scanner-laser {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent 5%, #10b981 50%, transparent 95%);
+        box-shadow: 0 0 15px #10b981, 0 0 5px #34d399;
+        animation: laserSweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    .scanner-grid {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+    }
+
+    @keyframes pulseShimmer {
+        0% { opacity: 0.5; background-position: -200% 0; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; background-position: 200% 0; }
+    }
+
+    .loading-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background-color: #ffffff;
+        padding: 16px;
+        margin-bottom: 12px;
+    }
+
+    .loading-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.775rem;
+        font-weight: 700;
+        color: #059669;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .loading-spinner-ring {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #e5e7eb;
+        border-top: 2px solid #10b981;
+        border-radius: 50%;
+        animation: spinRing 0.8s linear infinite;
+    }
+
+    @keyframes spinRing {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .skeleton-box {
+        background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+        background-size: 200% 100%;
+        animation: pulseShimmer 1.5s infinite;
+        border-radius: 3px;
+    }
+
+    .skeleton-title {
+        height: 24px;
+        width: 55%;
+        margin-bottom: 8px;
+    }
+
+    .skeleton-subtitle {
+        height: 12px;
+        width: 30%;
+        margin-bottom: 16px;
+    }
+
+    .skeleton-bar-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .skeleton-bar-label {
+        width: 65px;
+        height: 12px;
+    }
+
+    .skeleton-bar-track {
+        flex: 1;
+        height: 8px;
+    }
+
+    .skeleton-bar-val {
+        width: 40px;
+        height: 12px;
+    }
 </style>
 """
 
@@ -646,6 +766,142 @@ class InferenceRunner:
                 pass
 
 
+
+def build_loading_html() -> str:
+    return """
+    <div class="box-card loading-card">
+        <div class="loading-header">
+            <div class="loading-spinner-ring"></div>
+            <span>ANALYZING IMAGE WITH MOBILENETV2...</span>
+        </div>
+        <div class="box-card-body" style="padding: 12px 14px;">
+            <div class="skeleton-box skeleton-title"></div>
+            <div class="skeleton-box skeleton-subtitle"></div>
+            <div class="skeleton-bar-row">
+                <div class="skeleton-box skeleton-bar-label"></div>
+                <div class="skeleton-box skeleton-bar-track"></div>
+                <div class="skeleton-box skeleton-bar-val"></div>
+            </div>
+            <div class="skeleton-bar-row">
+                <div class="skeleton-box skeleton-bar-label"></div>
+                <div class="skeleton-box skeleton-bar-track"></div>
+                <div class="skeleton-box skeleton-bar-val"></div>
+            </div>
+            <div class="skeleton-bar-row">
+                <div class="skeleton-box skeleton-bar-label"></div>
+                <div class="skeleton-box skeleton-bar-track"></div>
+                <div class="skeleton-box skeleton-bar-val"></div>
+            </div>
+            <div class="skeleton-bar-row">
+                <div class="skeleton-box skeleton-bar-label"></div>
+                <div class="skeleton-box skeleton-bar-track"></div>
+                <div class="skeleton-box skeleton-bar-val"></div>
+            </div>
+        </div>
+    </div>
+    <div class="box-card">
+        <div class="box-card-header">
+            <span>Inference Status</span>
+            <span>Active</span>
+        </div>
+        <div class="box-card-body">
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <div class="spec-label">Process</div>
+                    <div class="spec-val" style="color: #059669;">Forward Pass...</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Grad-CAM</div>
+                    <div class="spec-val" style="color: #059669;">Computing Map...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    """
+
+
+def build_result_html(res: dict) -> str:
+    top_class = res.get("predicted_class", "unknown")
+    confidence = float(res.get("confidence", 0.0))
+    probabilities = res.get("probabilities", {})
+    conf_pct_str = f"{confidence * 100:.2f}%"
+
+    rows_html = ""
+    sorted_probs = sorted(probabilities.items(), key=lambda kv: kv[1], reverse=True)
+    for c_name, prob in sorted_probs:
+        is_active = c_name == top_class
+        row_cls = "table-row active" if is_active else "table-row"
+        pct_val = prob * 100
+        rows_html += f'''
+        <div class="{row_cls}">
+            <div class="row-name">{c_name}</div>
+            <div class="row-bar-bg">
+                <div class="row-bar-fill" style="width: {pct_val:.2f}%;"></div>
+            </div>
+            <div class="row-val">{pct_val:.2f}%</div>
+        </div>
+        '''
+
+    return f'''
+    <div class="box-card">
+        <div class="box-card-header">
+            <span>Classification Result</span>
+            <span>Argmax</span>
+        </div>
+        <div class="box-card-body">
+            <div class="primary-result">
+                <span class="primary-name">{top_class}</span>
+                <span class="primary-badge">{conf_pct_str}</span>
+            </div>
+        </div>
+    </div>
+    <div class="table-container">
+        <div class="table-header">
+            <span>Class</span>
+            <span>Distribution</span>
+            <span style="text-align: right;">Probability</span>
+        </div>
+        {rows_html}
+    </div>
+    <div class="box-card">
+        <div class="box-card-header">
+            <span>System Metadata</span>
+            <span>Runtime</span>
+        </div>
+        <div class="box-card-body">
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <div class="spec-label">Model Architecture</div>
+                    <div class="spec-val">MobileNetV2</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Input Resolution</div>
+                    <div class="spec-val">224 x 224 x 3</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Model Format</div>
+                    <div class="spec-val">Keras SavedModel</div>
+                </div>
+                <div class="spec-item">
+                    <div class="spec-label">Backend Worker</div>
+                    <div class="spec-val">Python ML venv</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    '''
+
+
+def build_empty_html() -> str:
+    return """
+    <div class="empty-console">
+        <div class="empty-console-title">AWAITING IMAGE INPUT</div>
+        <div class="empty-console-sub">
+            Drop a waste image into the left console or browse from your disk to run instant classification.
+        </div>
+    </div>
+    """
+
 @st.cache_resource(show_spinner=False)
 def get_model_runner(path: str) -> InferenceRunner:
     return InferenceRunner(path)
@@ -717,29 +973,42 @@ with left_col:
             image_is_valid = False
 
     if image_is_valid and image_bytes is not None:
-        st.markdown("<style>div[data-testid='stFileUploader'] { display: none !important; }</style>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <style>
+                div[data-testid='stFileUploader'] {
+                    margin-bottom: 8px !important;
+                }
+                div[data-testid='stFileUploader'] > section {
+                    min-height: 44px !important;
+                    height: 44px !important;
+                    padding: 4px 12px !important;
+                    display: flex !important;
+                    flex-direction: row !important;
+                    align-items: center !important;
+                    justify-content: space-between !important;
+                    border: 1px dashed #cbd5e1 !important;
+                    background-color: #f8fafc !important;
+                }
+                div[data-testid='stFileUploader'] > section:hover {
+                    border-color: #059669 !important;
+                    background-color: #f0fdf4 !important;
+                }
+                div[data-testid='stFileUploader'] [data-testid='stFileUploaderDropzoneInstructions'] {
+                    flex-direction: row !important;
+                    gap: 8px !important;
+                    font-size: 0.725rem !important;
+                }
+                div[data-testid='stFileUploader'] button {
+                    font-size: 0.725rem !important;
+                    padding: 2px 8px !important;
+                }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
         file_sig = f"{filename}_{len(image_bytes)}"
-        if st.session_state.prev_file_sig != file_sig:
-            st.session_state.prev_file_sig = file_sig
-            suffix = Path(filename).suffix.lower()
-            if suffix not in [".jpg", ".jpeg", ".png"]:
-                suffix = ".jpg"
-
-            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
-                tmp.write(image_bytes)
-                tmp_path = tmp.name
-
-            try:
-                result = runner.predict(tmp_path)
-                st.session_state.current_result = result
-            except Exception as exc:
-                st.error(f"Inference failed: {exc}")
-                st.session_state.current_result = None
-            finally:
-                try:
-                    os.remove(tmp_path)
-                except OSError:
-                    pass
+        needs_inference = (st.session_state.prev_file_sig != file_sig)
 
         header_c1, header_c2 = st.columns([3, 1])
         with header_c1:
@@ -753,7 +1022,7 @@ with left_col:
                 unsafe_allow_html=True,
             )
         with header_c2:
-            if st.button("Re-upload", use_container_width=True):
+            if st.button("✕ Clear Image", key="clear_img_btn", use_container_width=True):
                 st.session_state.uploader_key += 1
                 st.session_state.prev_file_sig = None
                 st.session_state.current_result = None
@@ -761,9 +1030,18 @@ with left_col:
 
         b64_img = base64.b64encode(image_bytes).decode("ascii")
         mime = "image/png" if filename.lower().endswith(".png") else "image/jpeg"
+        scanner_html = (
+            '<div class="scanner-overlay">'
+            '<div class="scanner-laser"></div>'
+            '<div class="scanner-grid"></div>'
+            '</div>'
+            if needs_inference
+            else ""
+        )
         st.markdown(
             f"""
             <div class="image-preview-frame">
+                {scanner_html}
                 <img src="data:{mime};base64,{b64_img}" alt="{filename}" />
             </div>
             """,
@@ -780,103 +1058,50 @@ with right_col:
         """,
         unsafe_allow_html=True,
     )
+    right_container = st.empty()
 
-    if st.session_state.current_result is not None:
-        res = st.session_state.current_result
-        top_class = res.get("predicted_class", "unknown")
-        confidence = float(res.get("confidence", 0.0))
-        probabilities = res.get("probabilities", {})
+    if image_is_valid and image_bytes is not None:
+        file_sig = f"{filename}_{len(image_bytes)}"
+        needs_inference = (st.session_state.prev_file_sig != file_sig)
 
-        conf_pct_str = f"{confidence * 100:.2f}%"
+        if needs_inference:
+            right_container.markdown(build_loading_html(), unsafe_allow_html=True)
+            suffix = Path(filename).suffix.lower()
+            if suffix not in [".jpg", ".jpeg", ".png"]:
+                suffix = ".jpg"
 
-        st.markdown(
-            f"""
-            <div class="box-card">
-                <div class="box-card-header">
-                    <span>Classification Result</span>
-                    <span>Argmax</span>
-                </div>
-                <div class="box-card-body">
-                    <div class="primary-result">
-                        <span class="primary-name">{top_class}</span>
-                        <span class="primary-badge">{conf_pct_str}</span>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                tmp.write(image_bytes)
+                tmp_path = tmp.name
 
-        rows_html = ""
-        sorted_probs = sorted(probabilities.items(), key=lambda kv: kv[1], reverse=True)
-        for c_name, prob in sorted_probs:
-            is_active = c_name == top_class
-            row_cls = "table-row active" if is_active else "table-row"
-            pct_val = prob * 100
-            rows_html += f"""
-            <div class="{row_cls}">
-                <div class="row-name">{c_name}</div>
-                <div class="row-bar-bg">
-                    <div class="row-bar-fill" style="width: {pct_val:.2f}%;"></div>
-                </div>
-                <div class="row-val">{pct_val:.2f}%</div>
-            </div>
-            """
+            try:
+                with st.spinner("Analyzing image with MobileNetV2..."):
+                    result = runner.predict(tmp_path)
+                st.session_state.current_result = result
+                st.session_state.prev_file_sig = file_sig
+            except Exception as exc:
+                st.error(f"Inference failed: {exc}")
+                st.session_state.current_result = None
+                st.session_state.prev_file_sig = None
+            finally:
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
 
-        st.markdown(
-            f"""
-            <div class="table-container">
-                <div class="table-header">
-                    <span>Class</span>
-                    <span>Distribution</span>
-                    <span style="text-align: right;">Probability</span>
-                </div>
-                {rows_html}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            """
-            <div class="box-card">
-                <div class="box-card-header">
-                    <span>System Metadata</span>
-                    <span>Runtime</span>
-                </div>
-                <div class="box-card-body">
-                    <div class="specs-grid">
-                        <div class="spec-item">
-                            <div class="spec-label">Model Architecture</div>
-                            <div class="spec-val">MobileNetV2</div>
-                        </div>
-                        <div class="spec-item">
-                            <div class="spec-label">Input Resolution</div>
-                            <div class="spec-val">224 x 224 x 3</div>
-                        </div>
-                        <div class="spec-item">
-                            <div class="spec-label">Model Format</div>
-                            <div class="spec-val">Keras SavedModel</div>
-                        </div>
-                        <div class="spec-item">
-                            <div class="spec-label">Backend Worker</div>
-                            <div class="spec-val">Python ML venv</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            if st.session_state.current_result is not None:
+                right_container.markdown(
+                    build_result_html(st.session_state.current_result),
+                    unsafe_allow_html=True,
+                )
+            st.rerun()
+        else:
+            if st.session_state.current_result is not None:
+                right_container.markdown(
+                    build_result_html(st.session_state.current_result),
+                    unsafe_allow_html=True,
+                )
+            else:
+                right_container.markdown(build_empty_html(), unsafe_allow_html=True)
     else:
-        st.markdown(
-            """
-            <div class="empty-console">
-                <div class="empty-console-title">AWAITING IMAGE INPUT</div>
-                <div class="empty-console-sub">
-                    Drop a waste image into the left console or browse from your disk to run instant classification.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        right_container.markdown(build_empty_html(), unsafe_allow_html=True)
