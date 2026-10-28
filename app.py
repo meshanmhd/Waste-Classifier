@@ -638,6 +638,37 @@ CUSTOM_CSS = """
         width: 40px;
         height: 12px;
     }
+
+    .scanning-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        margin-bottom: 8px;
+        border-radius: 4px;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.725rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+    }
+
+    .scanning-pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+        animation: pulseDot 1.2s infinite;
+    }
+
+    @keyframes pulseDot {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
 </style>
 """
 
@@ -768,56 +799,50 @@ class InferenceRunner:
 
 
 def build_loading_html() -> str:
-    return """
-    <div class="box-card loading-card">
-        <div class="loading-header">
-            <div class="loading-spinner-ring"></div>
-            <span>ANALYZING IMAGE WITH MOBILENETV2...</span>
-        </div>
-        <div class="box-card-body" style="padding: 12px 14px;">
-            <div class="skeleton-box skeleton-title"></div>
-            <div class="skeleton-box skeleton-subtitle"></div>
-            <div class="skeleton-bar-row">
-                <div class="skeleton-box skeleton-bar-label"></div>
-                <div class="skeleton-box skeleton-bar-track"></div>
-                <div class="skeleton-box skeleton-bar-val"></div>
-            </div>
-            <div class="skeleton-bar-row">
-                <div class="skeleton-box skeleton-bar-label"></div>
-                <div class="skeleton-box skeleton-bar-track"></div>
-                <div class="skeleton-box skeleton-bar-val"></div>
-            </div>
-            <div class="skeleton-bar-row">
-                <div class="skeleton-box skeleton-bar-label"></div>
-                <div class="skeleton-box skeleton-bar-track"></div>
-                <div class="skeleton-box skeleton-bar-val"></div>
-            </div>
-            <div class="skeleton-bar-row">
-                <div class="skeleton-box skeleton-bar-label"></div>
-                <div class="skeleton-box skeleton-bar-track"></div>
-                <div class="skeleton-box skeleton-bar-val"></div>
-            </div>
-        </div>
-    </div>
-    <div class="box-card">
-        <div class="box-card-header">
-            <span>Inference Status</span>
-            <span>Active</span>
-        </div>
-        <div class="box-card-body">
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <div class="spec-label">Process</div>
-                    <div class="spec-val" style="color: #059669;">Forward Pass...</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">Grad-CAM</div>
-                    <div class="spec-val" style="color: #059669;">Computing Map...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    """
+    return (
+        '<div class="box-card loading-card">'
+        '<div class="loading-header">'
+        '<div class="loading-spinner-ring"></div>'
+        '<span>ANALYZING IMAGE WITH MOBILENETV2...</span>'
+        '</div>'
+        '<div class="box-card-body" style="padding: 12px 14px;">'
+        '<div class="skeleton-box skeleton-title"></div>'
+        '<div class="skeleton-box skeleton-subtitle"></div>'
+        '<div class="skeleton-bar-row">'
+        '<div class="skeleton-box skeleton-bar-label"></div>'
+        '<div class="skeleton-box skeleton-bar-track"></div>'
+        '<div class="skeleton-box skeleton-bar-val"></div>'
+        '</div>'
+        '<div class="skeleton-bar-row">'
+        '<div class="skeleton-box skeleton-bar-label"></div>'
+        '<div class="skeleton-box skeleton-bar-track"></div>'
+        '<div class="skeleton-box skeleton-bar-val"></div>'
+        '</div>'
+        '<div class="skeleton-bar-row">'
+        '<div class="skeleton-box skeleton-bar-label"></div>'
+        '<div class="skeleton-box skeleton-bar-track"></div>'
+        '<div class="skeleton-box skeleton-bar-val"></div>'
+        '</div>'
+        '<div class="skeleton-bar-row">'
+        '<div class="skeleton-box skeleton-bar-label"></div>'
+        '<div class="skeleton-box skeleton-bar-track"></div>'
+        '<div class="skeleton-box skeleton-bar-val"></div>'
+        '</div>'
+        '</div>'
+        '</div>'
+        '<div class="box-card">'
+        '<div class="box-card-header">'
+        '<span>Inference Status</span>'
+        '<span>Active</span>'
+        '</div>'
+        '<div class="box-card-body">'
+        '<div class="specs-grid">'
+        '<div class="spec-item"><div class="spec-label">Process</div><div class="spec-val" style="color: #059669;">Forward Pass...</div></div>'
+        '<div class="spec-item"><div class="spec-label">Grad-CAM</div><div class="spec-val" style="color: #059669;">Computing Map...</div></div>'
+        '</div>'
+        '</div>'
+        '</div>'
+    )
 
 
 def build_result_html(res: dict) -> str:
@@ -829,78 +854,66 @@ def build_result_html(res: dict) -> str:
     rows_html = ""
     sorted_probs = sorted(probabilities.items(), key=lambda kv: kv[1], reverse=True)
     for c_name, prob in sorted_probs:
-        is_active = c_name == top_class
+        is_active = (c_name == top_class)
         row_cls = "table-row active" if is_active else "table-row"
         pct_val = prob * 100
-        rows_html += f'''
-        <div class="{row_cls}">
-            <div class="row-name">{c_name}</div>
-            <div class="row-bar-bg">
-                <div class="row-bar-fill" style="width: {pct_val:.2f}%;"></div>
-            </div>
-            <div class="row-val">{pct_val:.2f}%</div>
-        </div>
-        '''
+        rows_html += (
+            f'<div class="{row_cls}">'
+            f'<div class="row-name">{c_name}</div>'
+            f'<div class="row-bar-bg">'
+            f'<div class="row-bar-fill" style="width: {pct_val:.2f}%;"></div>'
+            f'</div>'
+            f'<div class="row-val">{pct_val:.2f}%</div>'
+            f'</div>'
+        )
 
-    return f'''
-    <div class="box-card">
-        <div class="box-card-header">
-            <span>Classification Result</span>
-            <span>Argmax</span>
-        </div>
-        <div class="box-card-body">
-            <div class="primary-result">
-                <span class="primary-name">{top_class}</span>
-                <span class="primary-badge">{conf_pct_str}</span>
-            </div>
-        </div>
-    </div>
-    <div class="table-container">
-        <div class="table-header">
-            <span>Class</span>
-            <span>Distribution</span>
-            <span style="text-align: right;">Probability</span>
-        </div>
-        {rows_html}
-    </div>
-    <div class="box-card">
-        <div class="box-card-header">
-            <span>System Metadata</span>
-            <span>Runtime</span>
-        </div>
-        <div class="box-card-body">
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <div class="spec-label">Model Architecture</div>
-                    <div class="spec-val">MobileNetV2</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">Input Resolution</div>
-                    <div class="spec-val">224 x 224 x 3</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">Model Format</div>
-                    <div class="spec-val">Keras SavedModel</div>
-                </div>
-                <div class="spec-item">
-                    <div class="spec-label">Backend Worker</div>
-                    <div class="spec-val">Python ML venv</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    '''
+    return (
+        f'<div class="box-card">'
+        f'<div class="box-card-header">'
+        f'<span>Classification Result</span>'
+        f'<span>Argmax</span>'
+        f'</div>'
+        f'<div class="box-card-body">'
+        f'<div class="primary-result">'
+        f'<span class="primary-name">{top_class}</span>'
+        f'<span class="primary-badge">{conf_pct_str}</span>'
+        f'</div>'
+        f'</div>'
+        f'</div>'
+        f'<div class="table-container">'
+        f'<div class="table-header">'
+        f'<span>Class</span>'
+        f'<span>Distribution</span>'
+        f'<span style="text-align: right;">Probability</span>'
+        f'</div>'
+        f'{rows_html}'
+        f'</div>'
+        f'<div class="box-card">'
+        f'<div class="box-card-header">'
+        f'<span>System Metadata</span>'
+        f'<span>Runtime</span>'
+        f'</div>'
+        f'<div class="box-card-body">'
+        f'<div class="specs-grid">'
+        f'<div class="spec-item"><div class="spec-label">Model Architecture</div><div class="spec-val">MobileNetV2</div></div>'
+        f'<div class="spec-item"><div class="spec-label">Input Resolution</div><div class="spec-val">224 x 224 x 3</div></div>'
+        f'<div class="spec-item"><div class="spec-label">Model Format</div><div class="spec-val">Keras SavedModel</div></div>'
+        f'<div class="spec-item"><div class="spec-label">Backend Worker</div><div class="spec-val">Python ML venv</div></div>'
+        f'</div>'
+        f'</div>'
+        f'</div>'
+    )
 
 
 def build_empty_html() -> str:
-    return """
-    <div class="empty-console">
-        <div class="empty-console-title">AWAITING IMAGE INPUT</div>
-        <div class="empty-console-sub">
-            Drop a waste image into the left console or browse from your disk to run instant classification.
-        </div>
-    </div>
-    """
+    return (
+        '<div class="empty-console">'
+        '<div class="empty-console-title">AWAITING IMAGE INPUT</div>'
+        '<div class="empty-console-sub">'
+        'Drop a waste image into the left console or browse from your disk to run instant classification.'
+        '</div>'
+        '</div>'
+    )
 
 @st.cache_resource(show_spinner=False)
 def get_model_runner(path: str) -> InferenceRunner:
@@ -1003,22 +1016,29 @@ with left_col:
                     font-size: 0.725rem !important;
                     padding: 2px 8px !important;
                 }
+                div[data-testid="stImage"] {
+                    background-color: #ffffff !important;
+                    border: 1px solid #e5e7eb !important;
+                    border-radius: 4px !important;
+                    padding: 12px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                }
+                div[data-testid="stImage"] img {
+                    max-height: calc(100vh - 200px) !important;
+                    object-fit: contain !important;
+                    border-radius: 4px !important;
+                }
             </style>
             """,
             unsafe_allow_html=True,
         )
-        file_sig = f"{filename}_{len(image_bytes)}"
-        needs_inference = (st.session_state.prev_file_sig != file_sig)
 
         header_c1, header_c2 = st.columns([3, 1])
         with header_c1:
             st.markdown(
-                f"""
-                <div class="preview-title" style="padding-top: 6px;">
-                    <span>{filename}</span>
-                    <span style="color: #9ca3af; font-size: 0.725rem;">({filesize_str})</span>
-                </div>
-                """,
+                f'<div class="preview-title" style="padding-top: 6px;"><span>{filename}</span> <span style="color: #9ca3af; font-size: 0.725rem;">({filesize_str})</span></div>',
                 unsafe_allow_html=True,
             )
         with header_c2:
@@ -1028,34 +1048,12 @@ with left_col:
                 st.session_state.current_result = None
                 st.rerun()
 
-        b64_img = base64.b64encode(image_bytes).decode("ascii")
-        mime = "image/png" if filename.lower().endswith(".png") else "image/jpeg"
-        scanner_html = (
-            '<div class="scanner-overlay">'
-            '<div class="scanner-laser"></div>'
-            '<div class="scanner-grid"></div>'
-            '</div>'
-            if needs_inference
-            else ""
-        )
-        st.markdown(
-            f"""
-            <div class="image-preview-frame">
-                {scanner_html}
-                <img src="data:{mime};base64,{b64_img}" alt="{filename}" />
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        scan_status_placeholder = st.empty()
+        st.image(image_bytes, use_container_width=True)
 
 with right_col:
     st.markdown(
-        """
-        <div class="panel-header">
-            <span class="panel-title">Inference Output</span>
-            <span class="nav-tag">6 Classes</span>
-        </div>
-        """,
+        '<div class="panel-header"><span class="panel-title">Inference Output</span><span class="nav-tag">6 Classes</span></div>',
         unsafe_allow_html=True,
     )
     right_container = st.empty()
@@ -1065,7 +1063,12 @@ with right_col:
         needs_inference = (st.session_state.prev_file_sig != file_sig)
 
         if needs_inference:
+            scan_status_placeholder.markdown(
+                '<div class="scanning-banner"><div class="scanning-pulse"></div><span>ANALYZING IMAGE WITH MOBILENETV2...</span></div>',
+                unsafe_allow_html=True,
+            )
             right_container.markdown(build_loading_html(), unsafe_allow_html=True)
+
             suffix = Path(filename).suffix.lower()
             if suffix not in [".jpg", ".jpeg", ".png"]:
                 suffix = ".jpg"
@@ -1075,8 +1078,7 @@ with right_col:
                 tmp_path = tmp.name
 
             try:
-                with st.spinner("Analyzing image with MobileNetV2..."):
-                    result = runner.predict(tmp_path)
+                result = runner.predict(tmp_path)
                 st.session_state.current_result = result
                 st.session_state.prev_file_sig = file_sig
             except Exception as exc:
@@ -1089,12 +1091,13 @@ with right_col:
                 except OSError:
                     pass
 
+            scan_status_placeholder.empty()
+
             if st.session_state.current_result is not None:
                 right_container.markdown(
                     build_result_html(st.session_state.current_result),
                     unsafe_allow_html=True,
                 )
-            st.rerun()
         else:
             if st.session_state.current_result is not None:
                 right_container.markdown(
