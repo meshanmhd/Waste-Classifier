@@ -4,11 +4,11 @@ defaults: "base.yaml"
 model:
   architecture: "mobilenet_v2"
   pretrained: true
-  freeze_backbone: true
+  freeze_backbone: false
 
 training:
   epochs: 20
-  learning_rate: 0.001
+  learning_rate: 0.00001
 
 # CPU fallback: train.py reads cpu_batch_size when no GPU is detected.
 cpu_batch_size: 16

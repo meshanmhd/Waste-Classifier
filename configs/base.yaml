@@ -1,6 +1,6 @@
 # Shared defaults: extend in env-specific configs via `defaults: base.yaml`.
 data:
-  dataset_path: "./data/dataset-resized"
+  dataset_path: "./data/merged_dataset"
   img_size: 224
   batch_size: 32
   val_split: 0.2
